@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Weapon.h"
 #include "GameFramework/Character.h"
 #include "ShooterCharacter.generated.h"
 
@@ -57,6 +58,14 @@ protected:
 	void StartFireTimer();
  
 	void AutoFireReset();
+
+	bool TraceUnderCrossHair(FHitResult& OutHitResult, FVector& OutHitLocation);
+
+	void TraceForItems();
+
+	class AWeapon* SpawnDefaultWeapon();
+
+	void EquipWeapon(AWeapon* WeaponToEquip);
 
 public:	
 	// Called every frame
@@ -157,6 +166,19 @@ private:
 	float AutomaticFireRate;
 
 	FTimerHandle AutoFireTimer;
+
+	bool bShouldTraceForItems;
+
+	int8 OverlappedItemCount;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Items, meta = (AllowPrivateAccess = "true"))
+	class AItem* TraceHitItemLastFrame;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
+	AWeapon* EquippedWeapon;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Combat, meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<AWeapon> DefaultWeaponClass;
 	
 
 public:
@@ -168,4 +190,8 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	float GetCrossHairSpreadMultiplier() const;
+
+	FORCEINLINE int8 GetOverlappedItemCount() const { return OverlappedItemCount; }
+
+	void IncrementOverlappedItemCount(int8 Amount);
 };
