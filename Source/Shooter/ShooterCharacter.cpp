@@ -44,7 +44,9 @@ bFiringBullet(false),
 AutomaticFireRate(0.1f),
 bShouldFire(true),
 bFireButtonPressed(false),
-bShouldTraceForItems(false)
+bShouldTraceForItems(false),
+CameraInterpDistance(250.f),
+CameraInterpElevation(65.f)
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -78,7 +80,7 @@ void AShooterCharacter::BeginPlay()
 	{
 		CameraDefaultFOV = GetFollowCamera()->FieldOfView;
 		CameraCurrentFOV = CameraDefaultFOV;
-	}
+	}	
 	EquipWeapon(SpawnDefaultWeapon());
 }
 
@@ -110,6 +112,8 @@ void AShooterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	PlayerInputComponent->BindAction("FireButton", IE_Released, this, &AShooterCharacter::FireButtonReleased);
 	PlayerInputComponent->BindAction("AimingButton", IE_Pressed, this, &AShooterCharacter::AimingButtonPressed);
 	PlayerInputComponent->BindAction("AimingButton", IE_Released, this, &AShooterCharacter::AimingButtonReleased);
+	PlayerInputComponent->BindAction("Select", IE_Pressed, this, &AShooterCharacter::SelectButtonPressed);
+	PlayerInputComponent->BindAction("Select", IE_Released, this, &AShooterCharacter::SelectButtonReleased);
 }
 
 float AShooterCharacter::GetCrossHairSpreadMultiplier() const
@@ -451,20 +455,19 @@ void AShooterCharacter::TraceForItems()
 		TraceUnderCrossHair(ItemTraceResult, HitLocation);
 		if(ItemTraceResult.bBlockingHit)
 		{
-			AItem* HitItem = Cast<AItem>(ItemTraceResult.Actor);
-			if(HitItem && HitItem->GetPickUpWidget())
+			TraceHitItem = Cast<AItem>(ItemTraceResult.Actor);
+			if(TraceHitItem && TraceHitItem->GetPickUpWidget())
 			{
-				HitItem->GetPickUpWidget()->SetVisibility(true);
-				GEngine->AddOnScreenDebugMessage(-1,1.f,FColor::Blue,TEXT("1a"));
+				TraceHitItem->GetPickUpWidget()->SetVisibility(true);
 			}
 			if(TraceHitItemLastFrame)
 			{
-				if(HitItem != TraceHitItemLastFrame)
+				if(TraceHitItem != TraceHitItemLastFrame)
 				{
 					TraceHitItemLastFrame->GetPickUpWidget()->SetVisibility(false);
 				}
 			}
-			TraceHitItemLastFrame = HitItem;
+			TraceHitItemLastFrame = TraceHitItem;
 		}
 	}
 	else if(TraceHitItemLastFrame)
@@ -486,21 +489,69 @@ void AShooterCharacter::EquipWeapon(AWeapon* WeaponToEquip)
 {
 	if(WeaponToEquip)
 	{
-		WeaponToEquip->GetAreaSphere()->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-		WeaponToEquip->GetCollisionBox()->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 		const USkeletalMeshSocket* HandSocket = GetMesh()->GetSocketByName(FName("RightHandSocket"));
 		if(HandSocket)
 		{
 			HandSocket->AttachActor(WeaponToEquip, GetMesh());
 		}
 		EquippedWeapon = WeaponToEquip;
-
+        EquippedWeapon->SetItemState(EItemState::EIS_Equipped);
 	}
+}
+
+void AShooterCharacter::DropWeapon()
+{
+	if(EquippedWeapon)
+	{
+		FDetachmentTransformRules DetachmentTransformRules(EDetachmentRule::KeepWorld, true);
+		EquippedWeapon->GetItemMesh()->DetachFromComponent(DetachmentTransformRules);
+		EquippedWeapon->SetItemState(EItemState::EIS_Falling);
+		EquippedWeapon->ThrowWeapon();
+	}
+}
+
+void AShooterCharacter::SelectButtonPressed()
+{
+	if(TraceHitItem)
+	{
+		auto TraceHitWeapon = Cast<AWeapon>(TraceHitItem);
+		SwapWeapon(TraceHitWeapon);
+	}
+	
+}
+
+void AShooterCharacter::SelectButtonReleased()
+{
+}
+
+void AShooterCharacter::SwapWeapon(AWeapon* WeaponToSwap)
+{
+	DropWeapon();
+	EquipWeapon(WeaponToSwap);
+	TraceHitItem = nullptr;
+	TraceHitItemLastFrame = nullptr;
 }
 
 void AShooterCharacter::FinishCrossHairBulletFire()
 {
 	bFiringBullet = false;
+}
+
+FVector AShooterCharacter::GetCameraInterpLocation()
+{
+	const FVector CameraWorldLocation { FollowCamera->GetComponentLocation() };
+	const FVector CameraForward { FollowCamera->GetForwardVector() };
+
+	return CameraWorldLocation + CameraForward * CameraInterpDistance + FVector(0.f, 0.f, CameraInterpElevation);
+}
+
+void AShooterCharacter::GetPickUpItem(AItem* Item)
+{
+	auto Weapon = Cast<AWeapon>(Item);
+	if(Weapon)
+	{
+		SwapWeapon(Weapon);
+	}
 }
 
 // Called every frame
