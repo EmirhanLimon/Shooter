@@ -52,6 +52,8 @@ protected:
 	void SetItemProperties(EItemState State);
 
 	void FinishInterping();
+
+	void ItemInterp(float DeltaTime);
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -103,6 +105,15 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess))
 	class AShooterCharacter* Character;
+
+	float ItemInterpX;
+
+	float ItemInterpY;
+
+	float InterpInitialYawOffset;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess))
+	UCurveFloat* ItemScaleCurve;
 
 public:
 	FORCEINLINE UWidgetComponent* GetPickUpWidget() const { return PickupWidget; }

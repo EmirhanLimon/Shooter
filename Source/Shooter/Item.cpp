@@ -3,6 +3,7 @@
 
 #include "Item.h"
 #include "ShooterCharacter.h"
+#include "Camera/CameraComponent.h"
 #include "Components/BoxComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
@@ -16,7 +17,10 @@ ItemState(EItemState::EIS_PickUp),
 ZCurveTime(0.7f),
 ItemInterpStartLocation(FVector(0.f)),
 CameraTargetLocation(FVector(0.f)),
-bInterping(false)
+bInterping(false),
+ItemInterpX(0.f),
+ItemInterpY(0.f),
+InterpInitialYawOffset(0.f)
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -181,9 +185,43 @@ void AItem::SetItemProperties(EItemState State)
 
 void AItem::FinishInterping()
 {
+    bInterping = false;
 	if(Character)
 	{
 		Character->GetPickUpItem(this);
+	}
+
+	SetActorScale3D(FVector(1.f));
+}
+
+void AItem::ItemInterp(float DeltaTime)
+{
+	if(!bInterping) return;
+
+	if(Character && ItemZCurve)
+	{
+		const float ElapsedTime = GetWorldTimerManager().GetTimerElapsed(ItemInterpTimer);
+		const float CurveValue = ItemZCurve->GetFloatValue(ElapsedTime);
+		FVector ItemLocation = ItemInterpStartLocation;
+		const FVector CameraInterpLocation { Character->GetCameraInterpLocation() };
+		const FVector ItemToCamera { FVector(0.f, 0.f, (CameraInterpLocation - ItemLocation).Z) };
+		const float DeltaZ = ItemToCamera.Size();
+		const FVector CurrentLocation { GetActorLocation() };
+		const float InterpXValue = FMath::FInterpTo(CurrentLocation.X, CameraInterpLocation.X, DeltaTime, 30.f);
+		const float InterpYValue = FMath::FInterpTo(CurrentLocation.Y, CameraInterpLocation.Y, DeltaTime, 30.f);
+		ItemLocation.X = InterpXValue;
+		ItemLocation.Y = InterpYValue;
+		ItemLocation.Z += CurveValue * DeltaZ;
+		SetActorLocation(ItemLocation, true, nullptr, ETeleportType::TeleportPhysics);
+		const FRotator CameraRotation { Character->GetFollowCamera()->GetComponentRotation() };
+		FRotator ItemRotation { 0.f, CameraRotation.Yaw + InterpInitialYawOffset, 0.f };
+		SetActorRotation(ItemRotation, ETeleportType::TeleportPhysics);
+
+		if(ItemScaleCurve)
+		{
+			const float ScaleCurveValue = ItemScaleCurve->GetFloatValue(ElapsedTime);
+			SetActorScale3D(FVector(ScaleCurveValue, ScaleCurveValue, ScaleCurveValue));
+		}
 	}
 }
 
@@ -191,6 +229,7 @@ void AItem::FinishInterping()
 void AItem::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	ItemInterp(DeltaTime);
 
 }
 
@@ -207,5 +246,8 @@ void AItem::StartItemCurve(AShooterCharacter* Char)
 	bInterping = true;
 	SetItemState(EItemState::EIS_EquipInterping);
 	GetWorldTimerManager().SetTimer(ItemInterpTimer, this, &AItem::FinishInterping, ZCurveTime);
+	const float CameraRotationYaw { Character->GetFollowCamera()->GetComponentRotation().Yaw };
+	const float ItemRotationYaw { GetActorRotation().Yaw };
+	InterpInitialYawOffset = ItemRotationYaw - CameraRotationYaw;
 }
 

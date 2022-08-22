@@ -46,7 +46,9 @@ bShouldFire(true),
 bFireButtonPressed(false),
 bShouldTraceForItems(false),
 CameraInterpDistance(250.f),
-CameraInterpElevation(65.f)
+CameraInterpElevation(65.f),
+Starting9mmAmmo(85),
+StartingARAmmo(120)
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -82,6 +84,7 @@ void AShooterCharacter::BeginPlay()
 		CameraCurrentFOV = CameraDefaultFOV;
 	}	
 	EquipWeapon(SpawnDefaultWeapon());
+	InitializeAmmoMap();
 }
 
 void AShooterCharacter::Tick(float DeltaTime)
@@ -208,6 +211,10 @@ void AShooterCharacter::FireWeapon()
 		AnimInstance->Montage_JumpToSection(FName("StartFire"));
 	}
 	StartCrossHairBulletFire();
+	if(EquippedWeapon)
+	{
+		EquippedWeapon->DecrementAmmo();
+	}
 }
 
 bool AShooterCharacter::GetBeamEndLocation(const FVector& MuzzleSocketLocation, FVector& OutBeamLocation)
@@ -387,8 +394,12 @@ void AShooterCharacter::StartCrossHairBulletFire()
 
 void AShooterCharacter::FireButtonPressed()
 {
-	bFireButtonPressed = true;
-	StartFireTimer();
+	if(WeaponHasAmmo())
+	{
+		bFireButtonPressed = true;
+		StartFireTimer();
+	}
+	
 }
 
 void AShooterCharacter::FireButtonReleased()
@@ -408,11 +419,15 @@ void AShooterCharacter::StartFireTimer()
 
 void AShooterCharacter::AutoFireReset()
 {
-	bShouldFire = true;
-	if(bFireButtonPressed)
+	if(WeaponHasAmmo())
 	{
-		StartFireTimer();
+		bShouldFire = true;
+		if(bFireButtonPressed)
+		{
+			StartFireTimer();
+		}
 	}
+	
 }
 
 bool AShooterCharacter::TraceUnderCrossHair(FHitResult& OutHitResult, FVector& OutHitLocation)
@@ -514,8 +529,7 @@ void AShooterCharacter::SelectButtonPressed()
 {
 	if(TraceHitItem)
 	{
-		auto TraceHitWeapon = Cast<AWeapon>(TraceHitItem);
-		SwapWeapon(TraceHitWeapon);
+		TraceHitItem->StartItemCurve(this);
 	}
 	
 }
@@ -530,6 +544,19 @@ void AShooterCharacter::SwapWeapon(AWeapon* WeaponToSwap)
 	EquipWeapon(WeaponToSwap);
 	TraceHitItem = nullptr;
 	TraceHitItemLastFrame = nullptr;
+}
+
+void AShooterCharacter::InitializeAmmoMap()
+{
+	AmmoMap.Add(EAmmoType::EAT_9mm, Starting9mmAmmo);
+	AmmoMap.Add(EAmmoType::EAT_AR, StartingARAmmo);
+}
+
+bool AShooterCharacter::WeaponHasAmmo()
+{
+	if(EquippedWeapon == nullptr) return false;
+
+	return EquippedWeapon->GetAmmo() > 0;
 }
 
 void AShooterCharacter::FinishCrossHairBulletFire()
