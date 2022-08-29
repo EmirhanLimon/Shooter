@@ -9,7 +9,7 @@
 #include "Components/WidgetComponent.h"
 
 // Sets default values
-AItem::AItem():
+AItem::AItem() :
 ItemName(FString("Default")),
 ItemCount(0),
 ItemRarity(EItemRarity::EIR_Common),

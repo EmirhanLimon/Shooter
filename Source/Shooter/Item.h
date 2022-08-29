@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <commctrl.h>
+
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Item.generated.h"
@@ -25,7 +27,7 @@ enum class EItemState : uint8
 	EIS_PickedUp  UMETA(DisplayName = "PickedUp"),
 	EIS_Equipped  UMETA(DisplayName = "Equipped"),
 	EIS_Falling  UMETA(DisplayName = "Falling"),
-	EIS_MAX  UMETA(DisplayName = "DefaultMAX")
+	EIS_MAX  UMETA(DisplayName = "DefaultMAX"),
 };
 
 UCLASS()
@@ -111,9 +113,15 @@ private:
 	float ItemInterpY;
 
 	float InterpInitialYawOffset;
-
+ 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess))
 	UCurveFloat* ItemScaleCurve;
+
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess))
+	//class USoundCue* PickupSound;
+
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess))
+	//USoundCue* EquipSound;
 
 public:
 	FORCEINLINE UWidgetComponent* GetPickUpWidget() const { return PickupWidget; }
@@ -129,5 +137,8 @@ public:
 	FORCEINLINE USkeletalMeshComponent* GetItemMesh() const { return ItemMesh; }
 
 	void StartItemCurve(AShooterCharacter* Char);
+
+	//FORCEINLINE USoundCue* GetPickupSound() const { return PickupSound; }
+	//FORCEINLINE USoundCue* GetEquipSound() const { return EquipSound; }
 	
 };

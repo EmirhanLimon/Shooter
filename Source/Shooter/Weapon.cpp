@@ -3,10 +3,17 @@
 
 #include "Weapon.h"
 
+#include "ShooterCharacter.h"
+
 AWeapon::AWeapon():
 ThrowWeaponTime(0.7f),
 bFalling(false),
-Ammo(0)
+Ammo(30),
+MagazineCapacity(30),
+WeaponType(EWeaponType::EWT_SubmachineGun),
+AmmoType(EAmmoType::EAT_9mm),
+ReloadMontageSection(FName(TEXT("Reload SMG"))),
+ClipBoneName(FName(TEXT("smg_clip")))
 {
 	PrimaryActorTick.bCanEverTick = true;
 }
@@ -33,7 +40,7 @@ void AWeapon::ThrowWeapon()
 
 	float RandomRotation { 30.f };
 	ImpulseDirection = ImpulseDirection.RotateAngleAxis(RandomRotation, FVector(0.f, 0.f, 1.f));
-	ImpulseDirection *= 20'000.f;
+	ImpulseDirection *= 10'000.f;
 	GetItemMesh()->AddImpulse(ImpulseDirection);
 
 	bFalling = true;
@@ -50,6 +57,12 @@ void AWeapon::DecrementAmmo()
 	{
 		--Ammo;
 	}
+}
+
+void AWeapon::ReloadAmmo(int32 Amount)
+{
+	checkf(Ammo + Amount <= MagazineCapacity, TEXT("Attemped to reload with more than magazine capacity!"));
+	Ammo += Amount;
 }
 
 void AWeapon::StopFalling()
