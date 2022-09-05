@@ -2,10 +2,10 @@
 
 #pragma once
 
-#include <commctrl.h>
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "AmmoType.h"
 #include "Item.generated.h"
 
 UENUM(BlueprintType)
@@ -27,7 +27,16 @@ enum class EItemState : uint8
 	EIS_PickedUp  UMETA(DisplayName = "PickedUp"),
 	EIS_Equipped  UMETA(DisplayName = "Equipped"),
 	EIS_Falling  UMETA(DisplayName = "Falling"),
-	EIS_MAX  UMETA(DisplayName = "DefaultMAX"),
+	EIS_MAX  UMETA(DisplayName = "DefaultMAX")
+};
+
+UENUM(BlueprintType)
+enum class EItemType : uint8
+{
+	EIT_Ammo UMETA(DisplayName = "Ammo"),
+	EIT_Weapon UMETA(DisplayName = "Weapon"),
+
+	EIT_MAX UMETA(DisplayName = "DefaultMax")
 };
 
 UCLASS()
@@ -51,14 +60,22 @@ protected:
 
 	void SetActiveStars();
 
-	void SetItemProperties(EItemState State);
+	virtual void SetItemProperties(EItemState State);
 
 	void FinishInterping();
 
 	void ItemInterp(float DeltaTime);
+
+	FVector GetInterpLocation();
+
+	void PlayPickUpSound();
+
+	
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
+	void PlayEquipSound();
 
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess))
@@ -117,11 +134,17 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess))
 	UCurveFloat* ItemScaleCurve;
 
-	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess))
-	//class USoundCue* PickupSound;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess))
+	class USoundCue* PickupSound;
 
-	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess))
-	//USoundCue* EquipSound;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess))
+	USoundCue* EquipSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+	EItemType ItemType;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item Properties", meta = (AllowPrivateAccess = "true"))
+	int32 InterpLocIndex;
 
 public:
 	FORCEINLINE UWidgetComponent* GetPickUpWidget() const { return PickupWidget; }
@@ -138,7 +161,10 @@ public:
 
 	void StartItemCurve(AShooterCharacter* Char);
 
-	//FORCEINLINE USoundCue* GetPickupSound() const { return PickupSound; }
-	//FORCEINLINE USoundCue* GetEquipSound() const { return EquipSound; }
+	FORCEINLINE USoundCue* GetPickupSound() const { return PickupSound; }
+	
+	FORCEINLINE USoundCue* GetEquipSound() const { return EquipSound; }
+
+	FORCEINLINE int32 GetItemCount() const { return ItemCount; }
 	
 };

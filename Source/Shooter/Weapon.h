@@ -8,14 +8,6 @@
 #include "Weapon.generated.h"
 
 UENUM(BlueprintType)
-enum class EAmmoType : uint8
-{
-	EAT_9mm UMETA(DisplayName = "9mm"),
-	EAT_AR UMETA(DisplayName = "AssaultRifle"),
-	EAT_MAX UMETA(DisplayName = "DefaultMAX"),
-};
-
-UENUM(BlueprintType)
 enum class EWeaponType : uint8
 {
 	EWT_SubmachineGun UMETA(DisplayName = "SubmachineGun"),
@@ -85,4 +77,6 @@ public:
 	void ReloadAmmo(int32 Amount);
 
 	FORCEINLINE void SetMovingClip(bool Move) { bMovingClip = Move; }
+
+	bool ClipIsFull();
 };
