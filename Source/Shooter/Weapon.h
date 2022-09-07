@@ -29,8 +29,12 @@ public:
 protected:
 	void StopFalling();
 
+	void ScaleChange();
+
 private:
 	FTimerHandle ThrowWeaponTimer;
+
+	FTimerHandle ScaleChangeTimer;
 
 	float ThrowWeaponTime;
 

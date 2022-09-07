@@ -45,6 +45,8 @@ void AWeapon::ThrowWeapon()
 
 	bFalling = true;
 	GetWorldTimerManager().SetTimer(ThrowWeaponTimer, this, &AWeapon::StopFalling, ThrowWeaponTime);
+	EnableGlowMaterial();
+	GetWorldTimerManager().SetTimer(ScaleChangeTimer, this, &AWeapon::ScaleChange, 0.8f);
 }
 
 void AWeapon::DecrementAmmo()
@@ -74,4 +76,10 @@ void AWeapon::StopFalling()
 {
 	bFalling = false;
 	SetItemState(EItemState::EIS_PickUp);
+	StartPulseTimer();
+}
+
+void AWeapon::ScaleChange()
+{
+	SetActorScale3D(FVector(2.f));
 }
