@@ -35,7 +35,8 @@ GlowAmount(150.f),
 FresnelExponent(3.f),
 FresnelReflectFraction(4.f),
 PulseCurveTime(5.f),
-SlotIndex(0)
+SlotIndex(0),
+bCharacterInventoryFull(false)
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -98,6 +99,7 @@ void AItem::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor*
 		if(ShooterCharacter)
 		{
 			ShooterCharacter->IncrementOverlappedItemCount(-1);
+			ShooterCharacter->UnHighlightInventorySlot();
 		}
 	}
 }
@@ -222,6 +224,7 @@ void AItem::FinishInterping()
 	{
 		Character->IncrementInterpLocItemCount(InterpLocIndex, -1);
 		Character->GetPickUpItem(this);
+		Character->UnHighlightInventorySlot();
 	}
 
 	SetActorScale3D(FVector(1.f));
@@ -283,11 +286,18 @@ FVector AItem::GetInterpLocation()
 	return FVector();
 }
 
-void AItem::PlayPickUpSound()
+void AItem::PlayPickUpSound(bool bForcePlaySound)
 {
 	if(Character)
 	{
-		if(Character->ShouldPlayPickUpSound())
+		if(bForcePlaySound)
+		{
+			if(PickupSound)
+			{
+				UGameplayStatics::PlaySound2D(this, PickupSound);
+			}
+		}
+		else if(Character->ShouldPlayPickUpSound())
 		{
 			Character->StartPickUpSoundTimer();
 			if(PickupSound)
@@ -321,12 +331,50 @@ void AItem::InitializeCustomDepth()
 
 void AItem::OnConstruction(const FTransform& Transform)
 {
+	FString RarityTablePath(TEXT("DataTable'/Game/_Game/DataTable/ItemRarityDataTable.ItemRarityDataTable'"));
+	UDataTable* RarityTableObject = Cast<UDataTable>(StaticLoadObject(UDataTable::StaticClass(), nullptr, *RarityTablePath));
+	if(RarityTableObject)
+	{
+		FItemRarityTable* RarityRow = nullptr;
+		switch (ItemRarity)
+		{
+		case EItemRarity::EIR_Damaged:
+			RarityRow = RarityTableObject->FindRow<FItemRarityTable>(FName("Damaged"), TEXT(""));
+			break;
+		case EItemRarity::EIR_Common:
+			RarityRow = RarityTableObject->FindRow<FItemRarityTable>(FName("Common"), TEXT(""));
+			break;
+		case EItemRarity::EIR_Uncommon:
+			RarityRow = RarityTableObject->FindRow<FItemRarityTable>(FName("Uncommon"), TEXT(""));
+			break;
+		case EItemRarity::EIR_Rare:
+			RarityRow = RarityTableObject->FindRow<FItemRarityTable>(FName("Rare"), TEXT(""));
+			break;
+		case EItemRarity::EIR_Legendary:
+			RarityRow = RarityTableObject->FindRow<FItemRarityTable>(FName("Legendary"), TEXT(""));
+			break;
+		}
+		if(RarityRow)
+		{
+			TableIGlowColor = RarityRow->GlowColor;
+			TableILightColor = RarityRow->LightColor;
+			TableIDarkColor = RarityRow->DarkColor;
+			TableINumberOfStars = RarityRow->NumberOfStarts;
+			TableIconBackground = RarityRow->IconBackground;
+			if(GetItemMesh())
+			{
+				GetItemMesh()->SetCustomDepthStencilValue(RarityRow->CustomDepthStencil);
+			}
+		}
+	}
 	if(MaterialInstance)
 	{
 		DynamicMaterialInstance = UMaterialInstanceDynamic::Create(MaterialInstance, this);
+		DynamicMaterialInstance->SetVectorParameterValue(TEXT("FresnelColor"), TableIGlowColor);
 		ItemMesh->SetMaterial(MaterialIndex, DynamicMaterialInstance);
+		EnableGlowMaterial();
 	}
-	EnableGlowMaterial();
+	
 }
 
 void AItem::EnableGlowMaterial()
@@ -335,6 +383,7 @@ void AItem::EnableGlowMaterial()
 	{
 		DynamicMaterialInstance->SetScalarParameterValue(TEXT("GlowBlendAlpha"), 0);
 	}
+	
 }
 
 void AItem::UpdatePulse()
@@ -376,11 +425,18 @@ void AItem::DisableGlowMaterial()
 	}
 }
 
-void AItem::PlayEquipSound()
+void AItem::PlayEquipSound(bool bForcePlaySound)
 {
 	if(Character)
 	{
-		if(Character->ShouldPlayEquipSound())
+		if(bForcePlaySound)
+		{
+			if(EquipSound)
+			{
+				UGameplayStatics::PlaySound2D(this, EquipSound);
+			}
+		}
+		else if(Character->ShouldPlayEquipSound())
 		{
 			Character->StartEquipSoundTimer();
 			if(EquipSound)
@@ -419,12 +475,12 @@ void AItem::SetItemState(EItemState State)
 	SetItemProperties(State);
 }
 
-void AItem::StartItemCurve(AShooterCharacter* Char)
+void AItem::StartItemCurve(AShooterCharacter* Char, bool bForcePlaySound)
 {
 	Character = Char;
 	InterpLocIndex = Character->GetInterpLocationIndex();
 	Character->IncrementInterpLocItemCount(InterpLocIndex, 1);
-	PlayPickUpSound(); 
+	PlayPickUpSound(bForcePlaySound); 
 	ItemInterpStartLocation = GetActorLocation();
 	bInterping = true;
 	SetItemState(EItemState::EIS_EquipInterping);
