@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "ShooterCharacter.h"
+#include "WeaponType.h"
+#include "Weapon.h"
 #include "Animation/AnimInstance.h"
 #include "ShooterAnimInstance.generated.h"
 
@@ -100,5 +102,11 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Crouching, meta = (AllowPrivateAccess = "true"))
 	bool bTurningInPlace;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Crouching, meta = (AllowPrivateAccess = "true"))
+	EWeaponType EquippedWeaponType;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Crouching, meta = (AllowPrivateAccess = "true"))
+	bool bShouldUseFABRIK;
 	
 };

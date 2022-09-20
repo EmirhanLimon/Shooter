@@ -194,12 +194,6 @@ private:
 	class UCameraComponent* FollowCamera;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
-	class USoundCue* FireSound;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
-	class UParticleSystem* MuzzleFlash;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
 	UParticleSystem* ImpactParticle;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
@@ -279,8 +273,6 @@ private:
 	bool bFireButtonPressed;
 
 	bool bShouldFire;
-
-	float AutomaticFireRate;
 
 	FTimerHandle AutoFireTimer;
 
@@ -431,5 +423,7 @@ public:
 	void StartEquipSoundTimer();
 
 	void UnHighlightInventorySlot();
+
+	FORCEINLINE AWeapon* GetEquippedWeapon() const { return EquippedWeapon;  }
 	
 };

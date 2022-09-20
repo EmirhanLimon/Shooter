@@ -29,6 +29,15 @@ void AWeapon::Tick(float DeltaSeconds)
 	}
 }
 
+void AWeapon::BeginPlay()
+{
+	Super::BeginPlay();
+	if(BoneToHide != FName(""))
+	{
+		GetItemMesh()->HideBoneByName(BoneToHide, EPhysBodyOp::PBO_None);
+	}
+}
+
 void AWeapon::ThrowWeapon()
 {
 	FRotator MeshRotation { 0.f, GetItemMesh()->GetComponentRotation().Yaw, 0.f };
@@ -101,6 +110,9 @@ void AWeapon::OnConstruction(const FTransform& Transform)
 		case EWeaponType::EWT_AssaultRifle:
 			WeaponDataRow = WeaponTableObject->FindRow<FWeaponDataTable>(FName("AssaultRifle"), TEXT(""));
 			break;
+		case EWeaponType::EWT_Pistol:
+			WeaponDataRow = WeaponTableObject->FindRow<FWeaponDataTable>(FName("Pistol"), TEXT(""));
+			break;
 		}
 		if(WeaponDataRow)
 		{
@@ -117,6 +129,18 @@ void AWeapon::OnConstruction(const FTransform& Transform)
 			PreviousMaterialIndex = GetMaterialIndex();
 			GetItemMesh()->SetMaterial(PreviousMaterialIndex, nullptr);
 			SetMaterialIndex(WeaponDataRow->MaterialIndex);
+			SetClipBoneName(WeaponDataRow->ClipBoneName);
+			SetReloadMontageSection(WeaponDataRow->ReloadMontageSection);
+			GetItemMesh()->SetAnimInstanceClass(WeaponDataRow->AnimBP);
+			CrosshairsBottom = WeaponDataRow->CrosshairsBottom;
+			CrosshairsLeft = WeaponDataRow->CrosshairsLeft;
+			CrosshairsMiddle = WeaponDataRow->CrosshairsMiddle;
+			CrosshairsRight = WeaponDataRow->CrosshairsRight;
+			CrosshairsTop = WeaponDataRow->CrosshairsTop;
+			AutoFireRate = WeaponDataRow->AutoFireRate;
+			MuzzleFlash = WeaponDataRow->MuzzleFlash;
+			FireSound = WeaponDataRow->FireSound;
+			BoneToHide = WeaponDataRow->BoneToHide;
 		}
 		if(GetMaterialInstance())
 		{
